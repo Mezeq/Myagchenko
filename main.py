@@ -6,6 +6,7 @@ import pdfkit
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, Border, Side
+import doctest
 
 
 def get_salary_avg(dct):
@@ -26,7 +27,20 @@ class Vacancy:
         salary_currency (str): Код валюты оклада
         area_name (str): Регион
         published_at (str): Дата публикации вакансии
-
+    >>> type(Vacancy({'name': '', 'salary_from': '1', 'salary_to': '2', 'salary_currency': '', 'area_name': '', 'published_at': ''})).__name__
+    'Vacancy'
+    >>> Vacancy({'name': 'S', 'salary_from': '1', 'salary_to': '2', 'salary_currency': '', 'area_name': '', 'published_at': ''}).name
+    'S'
+    >>> Vacancy({'name': '', 'salary_from': '5', 'salary_to': '2', 'salary_currency': '', 'area_name': '', 'published_at': ''}).salary_from
+    5.0
+    >>> Vacancy({'name': '', 'salary_from': '1', 'salary_to': '5', 'salary_currency': '', 'area_name': '', 'published_at': ''}).salary_to
+    5.0
+    >>> Vacancy({'name': '', 'salary_from': '1', 'salary_to': '2', 'salary_currency': 'RUR', 'area_name': '', 'published_at': ''}).salary_currency
+    'RUR'
+    >>> Vacancy({'name': '', 'salary_from': '1', 'salary_to': '2', 'salary_currency': '', 'area_name': 'Москва', 'published_at': ''}).area_name
+    'Москва'
+    >>> Vacancy({'name': '', 'salary_from': '1', 'salary_to': '2', 'salary_currency': '', 'area_name': '', 'published_at': '2007-12-03T17:34:36+0300'}).published_at
+    '2007-12-03T17:34:36+0300'
     """
     currency_to_rub = {"AZN": 35.68, "BYR": 23.91, "EUR": 59.90, "GEL": 21.74, "KGS": 0.76,
                        "KZT": 0.13, "RUR": 1, "UAH": 1.64, "USD": 60.66, "UZS": 0.0055}
@@ -54,15 +68,26 @@ class Vacancy:
 
         :return:
             (float): Средняя зарплата оклада в рублях
+
+        >>> Vacancy({'name': '', 'salary_from': '10', 'salary_to': '20', 'salary_currency': 'RUR', 'area_name': '', 'published_at': ''}).get_average_rub_salary()
+        15.0
+        >>> Vacancy({'name': '', 'salary_from': '120', 'salary_to': '140', 'salary_currency': 'KZT', 'area_name': '', 'published_at': ''}).get_average_rub_salary()
+        16.9
         """
-        return 0.5 * (self.salary_from + self.salary_to) * self.currency_to_rub[self.salary_currency]
+        return round(0.5 * (self.salary_from + self.salary_to) * self.currency_to_rub[self.salary_currency], 1)
 
     def get_published_vacancy_year(self):
         """Возвращает год публикации вакансии
         :return:
         (int): Год публикации вакансии
+
+        >>> Vacancy({'name': '', 'salary_from': '1', 'salary_to': '2', 'salary_currency': '', 'area_name': '', 'published_at': '2007-12-03T17:34:36+0300'}).get_published_vacancy_year()
+        2007
+        >>> Vacancy({'name': '', 'salary_from': '1', 'salary_to': '2', 'salary_currency': '', 'area_name': '', 'published_at': '12-12-03T17:34:36+0300'}).get_published_vacancy_year()
+        12
+
         """
-        return int(self.published_at[:4])
+        return int(self.published_at[:self.published_at.find('-')])
 
 
 class DataSet:
@@ -70,6 +95,13 @@ class DataSet:
     :Attributes:
         file_name (str): Название файла для анализа
         vacancy_name (str): Название выбранной вакансии
+
+    >>> type(DataSet('', '')).__name__
+    'DataSet'
+    >>> DataSet('vacancies_by_year.csv', '').file_name
+    'vacancies_by_year.csv'
+    >>> DataSet('', 'Аналитик').vacancy_name
+    'Аналитик'
     """
     def __init__(self, file_name, name):
         """Инициализирует клас DataSet
@@ -178,8 +210,12 @@ class Report:
         this_vacancy_amount (dict): Количество вакансий по годам для выбранной вакансии
         salary_city (dict): Зарплата по городам (В порядке убывания)
         share_city(dict): Доля вакансий по городам (В порядке убывания)
+
+    >>> type(Report('', {}, {}, {}, {}, {}, {})).__name__
+    'Report'
+    >>>
     """
-    def __init__(self, vacancy_name, salary, amount, this_vacancy_salary, this_vacancy_amount, salary_city, share_city):
+    def __init__(self, vacancy_name: str, salary: dict, amount: dict, this_vacancy_salary: dict, this_vacancy_amount: dict, salary_city: dict, share_city: dict):
         """Инициализирует класс Report
         :param:
             vacancy_name (str): Название выбранной вакансии
@@ -323,10 +359,12 @@ class Report:
         self.wb.save('report.xlsx')
 
 
-vacancy_name = 'Введите название IT-профессии'
+# vacancy_name = input('Введите название IT-профессии')
+vacancy_name = 'Аналитик'
 dataset = DataSet('vacancies_by_year.csv', vacancy_name)
 report = Report(vacancy_name, *dataset.get_clear_data())
-choice = input('Отчет, вакансии или статистика?')
+# choice = input('Отчет, вакансии или статистика?')
+choice = 'Вакансии'
 if choice == 'Отчет':
     report.generate_pdf()
 elif choice == 'Вакансии':
