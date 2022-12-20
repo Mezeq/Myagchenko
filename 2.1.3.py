@@ -1,5 +1,4 @@
 import csv
-from openpyxl import Workbook
 import matplotlib.pyplot as plt
 import numpy as np
 from jinja2 import Environment, FileSystemLoader
@@ -153,6 +152,21 @@ class Report:
         plt.tight_layout()
         plt.savefig('graph.png')
 
+    def generate_pdf(self):
+        template = Environment(loader=FileSystemLoader('templates')).get_template("pdf.html")
+        statistic = []
+        for year in self.salary:
+            statistic.append([year, self.salary[year], self.this_vacancy_salary[year], self.amount[year],
+                              self.this_vacancy_amount[year]])
+        for key, value in self.share_city.items():
+            self.share_city[key] = str(round(value * 100, 2)) + '%'
+        pdf = template.render({'name': dataset.vacancy_name,
+                               'path': r'C:\Users\ilyam\PycharmProjects\pythonProject\graph.png',
+                               'statistic': statistic, 'salary_city': self.salary_city,
+                               'share_city': self.share_city})
+        config = pdfkit.configuration(wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
+        pdfkit.from_string(pdf, 'report.pdf', configuration=config, options={"enable-local-file-access": ""})
+
     def generate_excel(self):
         ws1 = self.wb.active
         ws1.title = 'Статистика по годам'
@@ -215,23 +229,8 @@ class Report:
                 ws1[col + str(row + 1)].border = Border(left=thin, bottom=thin, right=thin, top=thin)
         self.wb.save('report.xlsx')
 
-    def generate_pdf(self):
-        template = Environment(loader=FileSystemLoader('templates')).get_template("pdf.html")
-        statistic = []
-        for year in self.salary:
-            statistic.append([year, self.salary[year], self.this_vacancy_salary[year], self.amount[year],
-                              self.this_vacancy_amount[year]])
-        for key, value in self.share_city.items():
-            self.share_city[key] = str(round(value * 100, 2)) + '%'
-        pdf = template.render({'name': dataset.vacancy_name,
-                               'path': r'C:\Users\ilyam\PycharmProjects\pythonProject\graph.png',
-                               'statistic': statistic, 'salary_city': self.salary_city,
-                               'share_city': self.share_city})
-        config = pdfkit.configuration(wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
-        pdfkit.from_string(pdf, 'report.pdf', configuration=config, options={"enable-local-file-access": ""})
 
-
-vacancy_name = 'Аналитик'
+vacancy_name = 'Введите название IT-профессии'
 dataset = DataSet('vacancies_by_year.csv', vacancy_name)
 report = Report(vacancy_name, *dataset.get_clear_data())
 choice = input('Отчет, вакансии или статистика?')
