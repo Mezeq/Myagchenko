@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from jinja2 import Environment, FileSystemLoader
 import pdfkit
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font, Border, Side
 
 
 def get_salary_avg(dct):
@@ -151,6 +153,68 @@ class Report:
         plt.tight_layout()
         plt.savefig('graph.png')
 
+    def generate_excel(self):
+        ws1 = self.wb.active
+        ws1.title = 'Статистика по годам'
+        ws1.append(['Год', 'Средняя зарплата', 'Средняя зарплата - ' + self.vacancy_name, 'Количество вакансий',
+                    'Количество вакансий - ' + self.vacancy_name])
+        for year in self.salary:
+            ws1.append([year, self.salary[year], self.this_vacancy_salary[year], self.amount[year],
+                        self.this_vacancy_amount[year]])
+
+        data = [['Год ', 'Средняя зарплата ', ' Средняя зарплата - ' + self.vacancy_name, ' Количество вакансий',
+                 ' Количество вакансий - ' + self.vacancy_name]]
+        column_widths = []
+        for row in data:
+            for i, cell in enumerate(row):
+                if len(column_widths) > i:
+                    if len(cell) > column_widths[i]:
+                        column_widths[i] = len(cell)
+                else:
+                    column_widths += [len(cell)]
+
+        for i, column_width in enumerate(column_widths, 1):  # ,1 to start at 1
+            ws1.column_dimensions[get_column_letter(i)].width = column_width + 2
+
+        data = [['Город', 'Уровень зарплат', '', 'Город', 'Доля вакансий']]
+        for (city1, value1), (city2, value2) in zip(self.salary_city.items(), self.share_city.items()):
+            data.append([city1, value1, '', city2, value2])
+        ws2 = self.wb.create_sheet('Статистика по городам')
+        for row in data:
+            ws2.append(row)
+
+        column_widths = []
+        for row in data:
+            for i, cell in enumerate(row):
+                cell = str(cell)
+                if len(column_widths) > i:
+                    if len(cell) > column_widths[i]:
+                        column_widths[i] = len(cell)
+                else:
+                    column_widths += [len(cell)]
+
+        for i, column_width in enumerate(column_widths, 1):
+            ws2.column_dimensions[get_column_letter(i)].width = column_width + 2
+
+        font_bold = Font(bold=True)
+        for col in 'ABCDE':
+            ws1[col + '1'].font = font_bold
+            ws2[col + '1'].font = font_bold
+
+        for index, _ in enumerate(self.salary_city):
+            ws2['E' + str(index + 2)].number_format = '0.00%'
+
+        thin = Side(border_style='thin', color='00000000')
+
+        for row in range(len(data)):
+            for col in 'ABDE':
+                ws2[col + str(row + 1)].border = Border(left=thin, bottom=thin, right=thin, top=thin)
+
+        for row, _ in enumerate(self.salary):
+            for col in 'ABCDE':
+                ws1[col + str(row + 1)].border = Border(left=thin, bottom=thin, right=thin, top=thin)
+        self.wb.save('report.xlsx')
+
     def generate_pdf(self):
         template = Environment(loader=FileSystemLoader('templates')).get_template("pdf.html")
         statistic = []
@@ -167,7 +231,15 @@ class Report:
         pdfkit.from_string(pdf, 'report.pdf', configuration=config, options={"enable-local-file-access": ""})
 
 
-vacancy_name = 'Аналитик'
+vacancy_name = input('Введите название вакансии')
 dataset = DataSet('vacancies_by_year.csv', vacancy_name)
 report = Report(vacancy_name, *dataset.get_clear_data())
-report.generate_pdf()
+choice = input('Статистика, отчеты или вакансии?:')
+if choice == 'статистика':
+    report.generate_excel()
+elif choice == 'отчёт':
+    report.generate_pdf()
+elif choice == 'вакансии':
+    report.generate_image()
+else:
+    print('Неправильный формат ввода ввод')
