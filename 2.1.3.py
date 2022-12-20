@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from jinja2 import Environment, FileSystemLoader
 import pdfkit
+from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, Border, Side
-
 
 def get_salary_avg(dct):
     for key, value in dct.items():
@@ -231,15 +231,15 @@ class Report:
         pdfkit.from_string(pdf, 'report.pdf', configuration=config, options={"enable-local-file-access": ""})
 
 
-vacancy_name = input('Введите название вакансии')
+vacancy_name = 'Аналитик'
 dataset = DataSet('vacancies_by_year.csv', vacancy_name)
 report = Report(vacancy_name, *dataset.get_clear_data())
-choice = input('Статистика, отчеты или вакансии?:')
-if choice == 'статистика':
-    report.generate_excel()
-elif choice == 'отчёт':
+choice = input('Отчет, вакансии или статистика?')
+if choice == 'Отчет':
     report.generate_pdf()
-elif choice == 'вакансии':
+elif choice == 'Вакансии':
     report.generate_image()
+elif choice == 'Статистика':
+    report.generate_excel()
 else:
-    print('Неправильный формат ввода ввод')
+    print('Неправильный формат ввода')
