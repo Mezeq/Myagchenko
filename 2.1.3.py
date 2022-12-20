@@ -80,7 +80,6 @@ class DataSet:
                         vacancy_salary[year] = [mean_salary]
                     else:
                         vacancy_salary[year] += [mean_salary]
-
                     if year not in vacancy_amount:
                         vacancy_amount[year] = 1
                     else:
